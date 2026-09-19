@@ -17,8 +17,8 @@ raysieve: 6 working / 37 checked → out/
 
 ```text
 # out/working.txt
-vless://...@104.21.70.21:8080?...#%F0%9F%87%A9%F0%9F%87%AA%20DE%20%C2%B7%20Frankfurt%20am%20Main
-trojan://...@188.114.96.3:443?...#%F0%9F%87%B8%F0%9F%87%AC%20SG%20%C2%B7%20Singapore
+vless://...@104.21.70.21:8080?...#Frankfurt%20am%20Main
+trojan://...@188.114.96.3:443?...#Singapore
 ```
 
 No dependencies. No config files. Works on any Linux server (and macOS/Windows), on x64 and ARM.
