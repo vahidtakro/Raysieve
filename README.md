@@ -53,8 +53,21 @@ docker run --rm -v "$PWD:/work" -w /work raysieve configs.txt --out out
 
 ## Usage
 
+> **Tip:** cloning does **not** put a `raysieve` command on your `PATH`. Run it through node or use the executable path:
+>
+> ```bash
+> node bin/raysieve.js <input> [options]   # always works
+> ./bin/raysieve.js <input> [options]      # same, uses the shebang
+> ```
+>
+> If you want a global `raysieve` command in your shell, install it once (no dependencies, so this is instant):
+>
+> ```bash
+> npm install -g .      # from inside the cloned repo; then just type: raysieve
+> ```
+
 ```bash
-raysieve <file|directory|->  [options]
+raysieve <file|directory|-|https://...>  [options]
 ```
 
 | Input | Meaning |
