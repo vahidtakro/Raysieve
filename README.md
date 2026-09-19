@@ -37,7 +37,7 @@ Leaked/public proxy configs rot fast — usually most of a fresh batch is alread
 Requirements: **Node.js ≥ 18.17** and outbound internet access. That's it.
 
 ```bash
-git clone https://github.com/USERNAME/raysieve.git
+git clone https://github.com/vahidtakro/raysieve.git
 cd raysieve
 npm test                     # optional sanity check
 ```
