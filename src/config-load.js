@@ -1,7 +1,13 @@
-// Load configs from files/dirs/stdin; detect raw / plain-sub / base64-sub formats; dedupe.
+// Load configs from files/dirs/URLs/stdin; detect raw / plain-sub / base64-sub format; dedupe.
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+
+const HTTP_URL_RE = /^https?:\/\/\S+$/i;
+
+export function isHttpUrl(s) {
+  return HTTP_URL_RE.test(String(s || '').trim());
+}
 
 // Schemes we recognize. ssr/socks/https/juicity/wireguard are accepted but currently
 // pass through as "unsupported" entries so the report shows why they were skipped.
@@ -23,6 +29,7 @@ export function collectInputFiles(inputs) {
   const files = [];
   for (const input of inputs || []) {
     if (input === '-') continue;
+    if (isHttpUrl(input)) continue; // handled separately (fetched, not read from disk)
     let st;
     try {
       st = fs.statSync(input);
@@ -53,6 +60,26 @@ export function readStdin() {
     return fs.readFileSync(0, 'utf8');
   } catch {
     return '';
+  }
+}
+
+// Fetch a remote list over HTTP(S). Follows redirects; enforces a size cap so a
+// giant/hungry URL can't OOM the process; returns '' on failure (caller warns).
+export async function fetchRemoteText(url, { timeoutMs = 20000, maxBytes = 20 * 1024 * 1024 } = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const resp = await fetch(url, { redirect: 'follow', signal: controller.signal });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status} for ${url}`);
+    const len = Number(resp.headers.get('content-length') || 0);
+    if (len > maxBytes) throw new Error(`response too large (${len} bytes) from ${url}`);
+    const text = await resp.text();
+    if (Buffer.byteLength(text, 'utf8') > maxBytes) {
+      throw new Error(`response too large from ${url}`);
+    }
+    return text;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -132,4 +159,28 @@ export function loadConfigs(inputs, { stdinText } = {}) {
   }
 
   return { configs, skipped };
+}
+
+// Async wrapper: any input that looks like an http(s) URL is fetched first and its
+// body merged with stdin text. Local files/dirs pass through untouched.
+export async function loadConfigsAsync(inputs, { stdinText } = {}) {
+  const urls = [];
+  const locals = [];
+  for (const input of inputs || []) {
+    if (input === '-') continue;
+    if (isHttpUrl(input)) urls.push(input);
+    else locals.push(input);
+  }
+  const remoteTexts = await Promise.all(
+    urls.map(async (u) => {
+      try {
+        return await fetchRemoteText(u);
+      } catch (e) {
+        process.stderr.write(`raysieve: WARNING could not fetch ${u}: ${e.message}\n`);
+        return '';
+      }
+    })
+  );
+  const merged = [...remoteTexts, stdinText || ''].filter(Boolean).join('\n');
+  return loadConfigs(locals, { stdinText: merged || undefined });
 }

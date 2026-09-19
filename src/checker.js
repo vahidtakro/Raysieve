@@ -78,7 +78,7 @@ export async function testWithCore(core, node, { binary, timeoutMs = 12000, geo 
     };
     child.stdout.on('data', grab);
     child.stderr.on('data', grab);
-    await new Promise((r) => setTimeout(r, 350));
+    await waitInbound(socksPort, 3000, () => child.exitCode !== null);
     if (child.exitCode !== null) {
       return { ok: false, ms: Date.now() - started, via: null, geo: null, error: `core exited: ${firstLine(output)}` };
     }
@@ -115,6 +115,26 @@ function freePort() {
       srv.close(() => resolve(port));
     });
   });
+}
+
+// Poll until the core's SOCKS inbound actually accepts connections (cores can take
+// a moment to bind). Bails early if the child process died.
+async function waitInbound(port, timeoutMs, died) {
+  const end = Date.now() + timeoutMs;
+  while (Date.now() < end) {
+    if (died()) return false;
+    const ok = await new Promise((res) => {
+      const s = net.connect({ host: '127.0.0.1', port });
+      s.once('connect', () => {
+        s.destroy();
+        res(true);
+      });
+      s.once('error', () => res(false));
+    });
+    if (ok) return true;
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  return false;
 }
 
 function firstLine(s) {

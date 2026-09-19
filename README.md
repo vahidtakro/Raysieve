@@ -60,10 +60,29 @@ raysieve <file|directory|->  [options]
 | Input | Meaning |
 |---|---|
 | `configs.txt` | file with one URI per line (also accepts base64 subscription files — auto-detected) |
+| `https://…/list.txt` | **remote list over HTTP(S)** — fetched automatically (plain or base64 sub, auto-detected) |
 | `./more-configs/` | directory: every `*.txt`/`*.conf`/`*.list` inside is loaded |
 | `-` | read URIs from stdin (`cat list.txt \| raysieve -`) |
 
-Mix and match. Lines starting with `#` are comments. Duplicates are removed automatically.
+Mix and match — files, URLs, directories and stdin can be combined in one run. Lines starting with `#` are comments. Duplicates are removed automatically.
+
+### Importing remote config lists
+
+Most public config channels publish ready-made lists (often base64 subscriptions) on GitHub or their own servers. Just pass the URL:
+
+```bash
+# a plain URI-per-line list:
+raysieve https://raw.githubusercontent.com/username/repo/refs/heads/main/output/example.txt
+
+# a base64 subscription URL works identically — it's auto-detected and decoded:
+raysieve https://some-provider.example/sub?token=abc123
+
+# combine a remote list with your own local file, then serve the results:
+raysieve https://raw.githubusercontent.com/username/repo/refs/heads/main/output/example.txt\
+         my-extra-configs.txt -o /var/www/sub --serve 8080
+```
+
+raysieve fetches the URL (following redirects, 20 s timeout, 20 MB size cap), decodes it if it's base64, merges and dedupes everything, then tests it like any other input. Failed fetches warn and continue, so one dead mirror won't sink a batch.
 
 | Option | Default | Meaning |
 |---|---|---|
@@ -92,13 +111,13 @@ out/
 
 ### Scheduling it
 
-Config rot means you should re-run regularly. A cron entry that regenerates a fresh subscription every 30 minutes:
+Config rot means you should re-run regularly. A cron entry that re-fetches a remote list, re-tests it, and republishes a fresh subscription every 30 minutes:
 
 ```cron
-*/30 * * * * cd /opt/raysieve && ./bin/raysieve.js mylist.txt --out /var/www/sub --quiet
+*/30 * * * * cd /opt/raysieve && ./bin/raysieve.js https://raw.githubusercontent.com/username/repo/refs/heads/main/output/example.txt -o /var/www/sub --quiet
 ```
 
-Point your clients at `http://your-server/sub.txt` (via the `--serve` mode, or nginx on that dir) and they always import a fresh, tested list.
+Point your clients at `http://your-server/sub.txt` (via the `--serve` mode, or nginx on that dir) and they always import a fresh, tested list. For huge remote lists (10k+), add `--timeout 8000 --concurrency 16` to keep runs snappy.
 
 ---
 

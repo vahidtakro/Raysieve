@@ -1,7 +1,7 @@
 // CLI logic: parse args, load configs, run the check pipeline, write outputs.
 import fs from 'node:fs';
 import path from 'node:path';
-import { loadConfigs, readStdin } from './config-load.js';
+import { loadConfigsAsync, readStdin } from './config-load.js';
 import { parseConfig, validateNode, renameUri } from './parse.js';
 import { ensureCore } from './core-download.js';
 import { testWithCore, coresForNode, fmtMs } from './checker.js';
@@ -19,7 +19,8 @@ Usage:
   raysieve <input.txt | directory | ->  [options]
 
 Input: a file with one share-URI per line (vless/vmess/trojan/ss/hysteria2/tuic),
-  a directory of such files, "-" for stdin, or base64 subscription content.
+  a directory of such files, an http(s) URL to a remote list (plain or base64 sub),
+  "-" for stdin, or base64 subscription content.
 
 Options:
   -o, --out <dir>       output directory (default: out)
@@ -84,7 +85,7 @@ export async function run(argv) {
     process.exit(args.help ? 0 : 2);
   }
   const stdinText = args.inputs.includes('-') ? readStdin() : '';
-  const { configs, skipped } = loadConfigs(args.inputs, { stdinText });
+  const { configs, skipped } = await loadConfigsAsync(args.inputs, { stdinText });
   const log = (msg) => {
     if (!args.quiet) process.stderr.write(msg + '\n');
   };
