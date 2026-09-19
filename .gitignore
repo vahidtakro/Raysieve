@@ -1,0 +1,10 @@
+node_modules/
+out/
+out-*/
+tmp/
+*.log
+.env
+.DS_Store
+.freebuff/
+bin/xray
+bin/sing-box

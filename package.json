@@ -1,0 +1,22 @@
+{
+  "name": "raysieve",
+  "version": "1.0.0",
+  "description": "Feed it a pile of vless/vmess/trojan/ss/hysteria2/tuic URIs; it finds the ones that actually work, names them with real server location (country + flag + city), and hands back a clean subscription.",
+  "type": "module",
+  "bin": { "raysieve": "bin/raysieve.js" },
+  "main": "src/cli.js",
+  "scripts": {
+    "start": "node bin/raysieve.js",
+    "test": "node --test",
+    "check": "node bin/raysieve.js examples/configs.sample.txt --report out/report.md --quiet"
+  },
+  "keywords": [
+    "v2ray", "xray", "sing-box", "vless", "vmess", "trojan", "shadowsocks",
+    "hysteria2", "tuic", "proxy", "subscription", "config-checker", "cloudflare-workers"
+  ],
+  "engines": { "node": ">=18.17" },
+  "license": "GPL-3.0",
+  "repository": { "type": "git", "url": "https://github.com/USERNAME/raysieve" },
+  "bugs": { "url": "https://github.com/USERNAME/raysieve/issues" },
+  "homepage": "https://github.com/USERNAME/raysieve#readme"
+}
